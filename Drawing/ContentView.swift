@@ -86,36 +86,57 @@ struct Arc: InsettableShape {
     }
 }
 
+struct Flower: Shape {
+    // How much to move this petal away from the center
+    var petalOffset: Double = -20
+
+    // How wide to make each petal
+    var petalWidth: Double = 100
+
+    func path(in rect: CGRect) -> Path {
+        // The path that will hold all petals
+        var path = Path()
+
+        // Count from 0 up to pi * 2, moving up pi / 8 each time
+        for number in stride(from: 0, to: CGFloat.pi * 2, by: CGFloat.pi / 8) {
+            // rotate the petal by the current value of our loop
+            let rotation = CGAffineTransform(rotationAngle: number)
+
+            // move the petal to be at the center of our view
+            let position = rotation.concatenating(CGAffineTransform(translationX: rect.width / 2, y: rect.height / 2))
+
+            // create a path for this petal using our properties plus a fixed Y and height
+            let originalPetal = Path(ellipseIn: CGRect(x: CGFloat(petalOffset), y: 0, width: CGFloat(petalWidth), height: rect.width / 2))
+
+            // apply our rotation/position transformation to the petal
+            let rotatedPetal = originalPetal.applying(position)
+
+            // add it to our main path
+            path.addPath(rotatedPetal)
+        }
+
+        // now send the main path back
+        return path
+    }
+}
+
 struct ContentView: View {
-    let dash: CGFloat = 20
-    let circleDash: CGFloat = 40
-    @State private var phase: CGFloat = 0
-    @State private var phase2: CGFloat = 0
-    @State private var offset: CGFloat = -500.0
+    @State private var petalOffset = -20.0
+    @State private var petalWidth = 100.0
 
     var body: some View {
-        ZStack {
-            Triangle()
-            .stroke(Color.red, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round, dash: [dash, 25], dashPhase: phase))
-                .frame(width: 250, height: 250)
-            
-            Triangle()
-            .stroke(Color.purple, style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round, dash: [dash, 25], dashPhase: phase2))
-                .frame(width: 300, height: 300)
-                .offset(y: -10)
-            
-            RainDrop()
-                .fill(LinearGradient(gradient: Gradient(colors: [.white, .blue]), startPoint: .top, endPoint: .bottom))
-                .frame(width: 100, height: 100)
-                .offset(x: 0, y: offset)
-            
-        }
-        .onAppear {
-            withAnimation(Animation.linear(duration: 2.75).repeatForever(autoreverses: false)) {
-                phase += (dash+25)*2.0
-                phase2 -= (dash+25)*2.0
-                offset += 1000.0
-            }
+        VStack {
+            Flower(petalOffset: petalOffset, petalWidth: petalWidth)
+//                .stroke(Color.red, lineWidth: 1)
+                .fill(Color.red, style: FillStyle(eoFill: true))
+
+            Text("Offset")
+            Slider(value: $petalOffset, in: -40...40)
+                .padding([.horizontal, .bottom])
+
+            Text("Width")
+            Slider(value: $petalWidth, in: 0...100)
+                .padding(.horizontal)
         }
     }
 }
